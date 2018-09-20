@@ -55,11 +55,12 @@ namespace test.Controllers
         [HttpGet]
         public IActionResult  Auth( User user)
         {
-            var one = _userService.Authenticate(user.Name,user.Password);
-            if(one == null)
+            var one = _userService.Auth(user);
+            if(!one)
             {
                 return BadRequest(new {message="bad"});
             }
+            Response.Headers.Add("token",user.Token);
             return Ok(user);
         }
     }

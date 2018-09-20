@@ -9,12 +9,14 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens;
 using System.Security.Claims;
+using test.Entity;
 namespace test.Services
 {
     
     public interface IUserService
     {
-         User Authenticate(string username, string password);
+         bool Auth(string username, string password);
+         bool Auth(User user);
         IEnumerable<User> GetAll();
     }
     public class UserService:IUserService
@@ -28,32 +30,63 @@ namespace test.Services
         {
             _appSetting = appSettings.Value;
         }
-        public User Authenticate(string username, string password)
+        public bool Auth(string username, string password)
         {
             var user = _users.FirstOrDefault(p => p.Name == username && password == p.Password);
             if(user == null)
-            return null;
-            
-            // authentication successful so generate jwt token
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_appSetting.Secret);
-            var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new Claim[] 
+                return false;
+            }else
+            {
+                // authentication successful so generate jwt token
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(_appSetting.Secret);
+                var tokenDescriptor = new SecurityTokenDescriptor
                 {
-                    new Claim(ClaimTypes.Name, "1")
-                }),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            user.Token = tokenHandler.WriteToken(token);
+                    Subject = new ClaimsIdentity(new Claim[] 
+                    {
+                        new Claim(ClaimTypes.Name, "1")
+                    }),
+                    Expires = DateTime.UtcNow.AddDays(7),
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                };
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+                user.Token = tokenHandler.WriteToken(token);
 
-            // remove password before returning
-            user.Password = null;
+                // remove password before returning
+                user.Password = null;
+                return true;
+            }                    
 
-            return user;
         }
+         public bool Auth(User user)
+         {
+            var u = _users.FirstOrDefault(p => p.Name == user.Name && user.Password == p.Password);
+            if(u == null)
+            {
+                return false;
+            }else
+            {
+                // authentication successful so generate jwt token
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(_appSetting.Secret);
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Subject = new ClaimsIdentity(new Claim[] 
+                    {
+                        new Claim(ClaimTypes.Name, "1")
+                    }),
+                    Expires = DateTime.UtcNow.AddDays(7),
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                };
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+                user.Token = tokenHandler.WriteToken(token);
+
+                // remove password before returning
+                user.Password = null;
+                return true;
+            }    
+         }
         public IEnumerable<User> GetAll()
         {
             return null;

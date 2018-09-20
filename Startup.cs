@@ -53,8 +53,13 @@ namespace test
                 {
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = false,
-                    ValidateAudience = false
+                    ValidateIssuer = true,
+                    ValidIssuer = appSettingsSection["Issuer"],
+                    ValidateAudience = true,
+                    ValidAudience = appSettingsSection["Audience"],
+                    
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero
                 };
             });
 
@@ -78,7 +83,10 @@ namespace test
 
             app.UseAuthentication();
             
-            app.UseMvc();
+            app.UseMvc(routes =>{
+                routes.MapRoute("default","{controller}/{action}");
+
+            });
         }
     }
 }

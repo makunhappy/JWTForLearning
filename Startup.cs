@@ -64,7 +64,7 @@ namespace test
             });
 
             // configure DI for application services
-            services.AddScoped<IUserService, UserService>();
+            services.AddSingleton<IUserService, UserService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -81,7 +81,18 @@ namespace test
                 .AllowAnyHeader()
                 .AllowCredentials());
 
-            app.UseAuthentication();
+            // app.UseAuthentication();
+             var audienceConfig = Configuration.GetSection("AppSettings");
+            var symmetricKeyAsBase64 = audienceConfig["Secret"];
+            var keyByteArray = Encoding.ASCII.GetBytes(symmetricKeyAsBase64);
+            var signingKey = new SymmetricSecurityKey(keyByteArray);
+            var SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+            app.UseAuthentication(new TokenProviderOptions
+            {
+                Audience = audienceConfig["Audience"],
+                Issuer = audienceConfig["Issuer"],
+                SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256)
+            });
             
             app.UseMvc(routes =>{
                 routes.MapRoute("default","{controller}/{action}");

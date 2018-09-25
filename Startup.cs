@@ -10,7 +10,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using System.Text;
 using test.Helpers;
 using test.Services;
@@ -29,7 +30,7 @@ namespace test
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
-        {   
+        {
             services.AddCors();
             services.AddMvc();
 
@@ -57,10 +58,15 @@ namespace test
                     ValidIssuer = appSettingsSection["Issuer"],
                     ValidateAudience = true,
                     ValidAudience = appSettingsSection["Audience"],
-                    
+
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
                 };
+                x.IncludeErrorDetails = true;
+            });
+            services.AddAuthorization(Options =>
+            {
+                Options.AddPolicy("TrainedStaffOnly", option => option.RequireClaim("hehe"));
             });
 
             // configure DI for application services
@@ -81,21 +87,22 @@ namespace test
                 .AllowAnyHeader()
                 .AllowCredentials());
 
-            // app.UseAuthentication();
-             var audienceConfig = Configuration.GetSection("AppSettings");
-            var symmetricKeyAsBase64 = audienceConfig["Secret"];
-            var keyByteArray = Encoding.ASCII.GetBytes(symmetricKeyAsBase64);
-            var signingKey = new SymmetricSecurityKey(keyByteArray);
-            var SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
-            app.UseAuthentication(new TokenProviderOptions
+            app.UseAuthentication();
+            //var audienceConfig = Configuration.GetSection("AppSettings");
+            //var symmetricKeyAsBase64 = audienceConfig["Secret"];
+            //var keyByteArray = Encoding.ASCII.GetBytes(symmetricKeyAsBase64);
+            //var signingKey = new SymmetricSecurityKey(keyByteArray);
+            //var SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+            //app.UseAuthentication(new TokenProviderOptions
+            //{
+            //    Audience = audienceConfig["Audience"],
+            //    Issuer = audienceConfig["Issuer"],
+            //    SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256)
+            //});
+
+            app.UseMvc(routes =>
             {
-                Audience = audienceConfig["Audience"],
-                Issuer = audienceConfig["Issuer"],
-                SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256)
-            });
-            
-            app.UseMvc(routes =>{
-                routes.MapRoute("default","{controller}/{action}");
+                routes.MapRoute("default", "{controller=values}/{action=get}");
 
             });
         }
